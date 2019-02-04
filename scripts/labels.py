@@ -18,7 +18,7 @@ POSE_COCO_L2 = [
 	'left_eye',
 	'right_ear',
 	'left_ear',
-	'other_place'
+	'other'
 ]
 
 POSE_COCO_L1 = [
@@ -48,23 +48,23 @@ HAND = [
 	'thumb_root',
 	'thumb_first_joint',
 	'thumb_second_joint',
-	'thumb_claw',
+	'thumb_tip',
 	'index_first_joint',
 	'index_second_joint',
 	'index_third_joint',
-	'index_claw',
+	'index_tip',
 	'middle_first_joint',
 	'middle_second_joint',
 	'middle_third_joint',
-	'middle_claw',
-	'third_first_joint',
-	'third_second_joint',
-	'third_third_joint',
-	'third_claw',
-	'fourth_first_joint',
-	'fourth_second_joint',
-	'fourth_third_joint',
-	'fourth_claw'
+	'middle_tip',
+	'ring_first_joint',
+	'ring_second_joint',
+	'ring_third_joint',
+	'ring_tip',
+	'little_first_joint',
+	'little_second_joint',
+	'little_third_joint',
+	'little_tip'
 ]
 
 POSE_MPI_L2 = [
@@ -82,8 +82,8 @@ POSE_MPI_L2 = [
 	'left_hip',
 	'left_knee',
 	'left_ankle',
-	'belly_buttom',
-	'other_place'
+	'belly_bottom',
+	'other'
 ]
 
 POSE_MPI_L1 = [
@@ -94,11 +94,11 @@ POSE_MPI_L1 = [
 	('neck', 'left_shoulder'),
 	('left_shoulder', 'left_elbow'),
 	('left_elbow', 'left_wrist'),
-	('neck', 'belly_buttom'),
+	('neck', 'belly_bottom'),
 	('belly_buttom', 'right_hip'),
 	('right_hip', 'right_knee'),
 	('right_knee', 'right_ankle'),
-	('belly_buttom', 'left_hip'),
+	('belly_bottom', 'left_hip'),
 	('left_hip', 'left_knee'),
 	('left_knee', 'left_ankle')
 ]
