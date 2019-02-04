@@ -20,11 +20,11 @@ def callback(image_msg, people_msg):
         rospy.logerr(e)
     for person in people_msg.people:
         for part in person.body_parts:
-            cv2.line(cv_image, (int(part.x), int(part.y)), 3, (0, 0, 255), 1)
+            cv2.circle(cv_image, (int(part.x), int(part.y)), 3, (0, 0, 255), 1)
         parts = {part.name: (int(part.x), int(part.y)) for part in person.body_parts}
         for p1, p2 in POSE_COCO_L1:
             if p1 in parts and p2 in parts:
-                cv2.circle(cv_image, parts[p1], parts[p2], (0, 255, 0), 2)
+                cv2.line(cv_image, parts[p1], parts[p2], (0, 255, 0), 2)
     
     global image
     image = cv_image
