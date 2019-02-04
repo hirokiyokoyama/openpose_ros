@@ -7,6 +7,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from message_filters import ApproximateTimeSynchronizer, TimeSynchronizer, Subscriber
 import numpy as np
+from labels import POSE_COCO_L1
 
 bridge = CvBridge()
 image = None
@@ -18,12 +19,12 @@ def callback(image_msg, people_msg):
     except CvBridgeError as e:
         rospy.logerr(e)
     for person in people_msg.people:
-        print person
-        r = int(np.random.randint(255))
-        g = int(np.random.randint(255))
-        b = int(np.random.randint(255))
         for part in person.body_parts:
-            cv2.circle(cv_image, (int(part.x), int(part.y)), 5, (r, g, b), 2)
+            cv2.circle(cv_image, (int(part.x), int(part.y)), 3, (0, 0, 255), 1)
+        parts = {part.name: (int(part.x), int(part.y)) for part in person.body_parts}
+        for p1, p2 in POSE_COCO_L1:
+            if p1 in parts and p2 in parts:
+                cv2.circle(cv_image, parts[p1], parts[p2], (0, 255, 0), 2)
     
     global image
     image = cv_image
