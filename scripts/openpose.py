@@ -72,13 +72,14 @@ class KeyPointDetector:
       sess.close()
 
   def detect_keypoints(self, image,
-           key_point_threshold=0.5,
-           affinity_threshold=0.2,
-           line_division=15):
+                       key_point_threshold=0.5,
+                       affinity_threshold=0.2,
+                       line_division=15):
     image = image/255.
     scale_x = 8.
     scale_y = 8.
-                orig_shape = image.shape
+    orig_shape = image.shape
+    
     if self.input_shape is not None:
       #scale_x *= image.shape[1]/self.input_shape[1]
       #scale_y *= image.shape[0]/self.input_shape[0]
