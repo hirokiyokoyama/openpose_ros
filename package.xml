@@ -50,6 +50,7 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>python-opencv</run_depend>
+  <run_depend>python3-scipy</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

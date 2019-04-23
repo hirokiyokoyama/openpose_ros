@@ -125,7 +125,7 @@ class KeyPointDetector:
       # persons = [{self.part_names[k]:inlier_lists[v]\
       #       for k,v in person.iteritems()} for person in persons]
       persons = [{self.part_names[k]:inlier_lists[v] \
-                  for k,v in person.iteritems()} for person in persons]
+                  for k,v in person.items()} for person in persons]
     else:
       persons = [{self.part_names[c]:inliers \
                   for (_,_,_,c), inliers in zip(keypoints, inlier_lists)}]
@@ -152,7 +152,7 @@ def callback(data):
   persons = pose_detector.detect_keypoints(cv_image, **pose_params)
   msg = PersonArray(header=data.header)
   msg.people = [Person(body_parts=[KeyPoint(name=k, x=x, y=y) \
-                                   for k,(x,y) in p.iteritems()]) \
+                                   for k,(x,y) in p.items()]) \
                 for p in persons]
   people_pub.publish(msg)
   if show_prev:
@@ -167,7 +167,7 @@ def detect_people(req):
   persons = pose_detector.detect_keypoints(cv_image, **pose_params)
   msg = DetectPeopleResponse()
   msg.people = [Person(body_parts=[KeyPoint(name=k, x=x, y=y) \
-                                   for k,(x,y) in p.iteritems()]) \
+                                   for k,(x,y) in p.items()]) \
                 for p in persons]
   return msg
 
@@ -180,7 +180,7 @@ def detect_hand(req):
   key_points = hand_detector.detect_keypoints(cv_image, **pose_params)[0]
   msg = DetectKeyPointsResponse()
   msg.key_points = [KeyPoint(name=k, x=x, y=y) \
-                    for k,(x,y) in key_points.iteritems()]
+                    for k,(x,y) in key_points.items()]
   if show_prev:
     pose_detector.visualize(cv_image, [key_points])
   return msg
