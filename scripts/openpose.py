@@ -94,8 +94,8 @@ class KeyPointDetector:
       rospy.loginfo('Done.')
     heat_map, affinity, keypoints = predictions
                 
-                scale_x = orig_shape[1]/float(heat_map.shape[2])
-                scale_y = orig_shape[0]/float(heat_map.shape[1])
+    scale_x = orig_shape[1]/float(heat_map.shape[2])
+    scale_y = orig_shape[0]/float(heat_map.shape[1])
     #print('type(heat_map:{}, affinity:{}, keypoints:{})'.format(type(heat_map), type(affinity), type(keypoints)))
     #print('heat_map:: shape:{}, dtype:{})'.format(heat_map.shape, heat_map.dtype))
     #print('affinity:: shape:{}, dtype:{})'.format(affinity.shape, affinity.dtype))
@@ -120,14 +120,14 @@ class KeyPointDetector:
 
     if affinity is not None:
       persons = connect_parts(affinity[0], keypoints[:,1:], self.limbs,
-                  line_division=line_division, threshold=affinity_threshold)
+                              line_division=line_division, threshold=affinity_threshold)
       # persons = [{self.part_names[k]:inlier_lists[v]\
       #       for k,v in person.iteritems()} for person in persons]
-      persons = [{self.part_names[k]:inlier_lists[v]\
-            for k,v in person.iteritems()} for person in persons]
+      persons = [{self.part_names[k]:inlier_lists[v] \
+                  for k,v in person.iteritems()} for person in persons]
     else:
-      persons = [{self.part_names[c]:inliers\
-            for (_,_,_,c), inliers in zip(keypoints, inlier_lists)}]
+      persons = [{self.part_names[c]:inliers \
+                  for (_,_,_,c), inliers in zip(keypoints, inlier_lists)}]
     return persons
 
   def visualize(self, image, persons):
@@ -150,9 +150,9 @@ def callback(data):
     return
   persons = pose_detector.detect_keypoints(cv_image, **pose_params)
   msg = PersonArray(header=data.header)
-  msg.people = [Person(body_parts=[KeyPoint(name=k, x=x, y=y)\
-                   for k,(x,y) in p.iteritems()])\
-          for p in persons]
+  msg.people = [Person(body_parts=[KeyPoint(name=k, x=x, y=y) \
+                                   for k,(x,y) in p.iteritems()]) \
+                for p in persons]
   people_pub.publish(msg)
   if show_prev:
     pose_detector.visualize(cv_image, persons)
@@ -165,9 +165,9 @@ def detect_people(req):
     return None
   persons = pose_detector.detect_keypoints(cv_image, **pose_params)
   msg = DetectPeopleResponse()
-  msg.people = [Person(body_parts=[KeyPoint(name=k, x=x, y=y)\
-                   for k,(x,y) in p.iteritems()])\
-          for p in persons]
+  msg.people = [Person(body_parts=[KeyPoint(name=k, x=x, y=y) \
+                                   for k,(x,y) in p.iteritems()]) \
+                for p in persons]
   return msg
 
 def detect_hand(req):
@@ -178,8 +178,8 @@ def detect_hand(req):
     return None
   key_points = hand_detector.detect_keypoints(cv_image, **pose_params)[0]
   msg = DetectKeyPointsResponse()
-  msg.key_points = [KeyPoint(name=k, x=x, y=y)\
-            for k,(x,y) in key_points.iteritems()]
+  msg.key_points = [KeyPoint(name=k, x=x, y=y) \
+                    for k,(x,y) in key_points.iteritems()]
   if show_prev:
     pose_detector.visualize(cv_image, [key_points])
   return msg
