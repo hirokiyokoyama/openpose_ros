@@ -17,11 +17,15 @@ from openpose_ros.msg import Person, PersonArray, KeyPoint
 from openpose_ros.srv import DetectKeyPoints, DetectKeyPointsResponse, DetectPeople, DetectPeopleResponse
 from openpose_ros.cfg import KeyPointDetectorConfig
 from std_srvs.srv import Empty, EmptyResponse
-from nets import non_maximum_suppression, connect_parts, pose_net_coco, hand_net
+from nets import non_maximum_suppression, connect_parts, pose_net_coco, hand_net, face_net
 from labels import POSE_COCO_L1, POSE_COCO_L2, HAND
+FACE = ['face_%02d' % (i+1) for i in range(71)]
+
+stage = 6
 
 class KeyPointDetector:
-  def __init__(self, net_fn, ckpt_file, part_names, limbs=None, input_shape=None, auto_detection_start=True):
+  def __init__(self, net_fn, ckpt_file, part_names,
+               limbs=None, input_shape=None):
     self.net_fn = net_fn
     self.ckpt_file = ckpt_file
     self.input_shape = input_shape
@@ -32,10 +36,12 @@ class KeyPointDetector:
       self.limbs = [(part_names.index(p), part_names.index(q)) for p, q in limbs]
     else:
       self.limbs = None
-    if auto_detection_start:
-      self.initialize()
 
-  def initialize(self):
+  def initialize(self, stage=6):
+    stage_n_L1 = 'stage%d_L1' % stage
+    stage_n_L2 = 'stage%d_L2' % stage
+    stage_n = 'stage%d' % stage
+    
     if self.sess:
       self.sess.close()
     if self.graph is None:
@@ -47,14 +53,14 @@ class KeyPointDetector:
           shape[2] = self.input_shape[1]
         self.ph_x = tf.placeholder(tf.float32, shape=shape)
         self.end_points = self.net_fn(self.ph_x)
-        if 'stage6_L1' in self.end_points and 'stage6_L2' in self.end_points:
-          self.affinity = self.end_points['stage6_L1']
-          heat_map = self.end_points['stage6_L2']
-        elif 'stage6' in self.end_points:
+        if stage_n_L1 in self.end_points and stage_n_L2 in self.end_points:
+          self.affinity = self.end_points[stage_n_L1]
+          heat_map = self.end_points[stage_n_L2]
+        elif stage_n in self.end_points:
           self.affinity = tf.no_op()
-          heat_map = self.end_points['stage6']
+          heat_map = self.end_points[stage_n]
         else:
-          raise ValueError('Network function must return a dictionary that contains "stage6" or both "stage6_L1" and "stage6_L2".')
+          raise ValueError('Network function must return a dictionary that contains "%s" or both "%s" and "%s".' % (stage_n, stage_n_L1, stage_n_L2))
         self.heat_map = heat_map
         self.ph_threshold = tf.placeholder(tf.float32)
         self.keypoints = non_maximum_suppression(heat_map[:,:,:,:-1], threshold=self.ph_threshold)
@@ -79,7 +85,6 @@ class KeyPointDetector:
     scale_x = 8.
     scale_y = 8.
     orig_shape = image.shape
-    
     if self.input_shape is not None:
       #scale_x *= image.shape[1]/self.input_shape[1]
       #scale_y *= image.shape[0]/self.input_shape[0]
@@ -94,7 +99,6 @@ class KeyPointDetector:
       #print('type(predictions):{}'.format(type(predictions)))
       rospy.loginfo('Done.')
     heat_map, affinity, keypoints = predictions
-                
     scale_x = orig_shape[1]/float(heat_map.shape[2])
     scale_y = orig_shape[0]/float(heat_map.shape[1])
     #print('type(heat_map:{}, affinity:{}, keypoints:{})'.format(type(heat_map), type(affinity), type(keypoints)))
@@ -123,29 +127,19 @@ class KeyPointDetector:
       persons = connect_parts(affinity[0], keypoints[:,1:], self.limbs,
                               line_division=line_division, threshold=affinity_threshold)
       # persons = [{self.part_names[k]:inlier_lists[v]\
-      #       for k,v in person.iteritems()} for person in persons]
-      persons = [{self.part_names[k]:inlier_lists[v] \
-                  for k,v in person.items()} for person in persons]
+      #       for k,v in person.items()} for person in persons]
+      persons = [{self.part_names[k]:inlier_lists[v]\
+            for k,v in person.items()} for person in persons]
     else:
-      persons = [{self.part_names[c]:inliers \
-                  for (_,_,_,c), inliers in zip(keypoints, inlier_lists)}]
+      persons = [{self.part_names[c]:inliers\
+            for (_,_,_,c), inliers in zip(keypoints, inlier_lists)}]
     return persons
 
-  def visualize(self, image, persons):
-    vis_image = image.copy()
-    for i, person in enumerate(persons):
-      hsv = (int(180.*i/len(persons)), 255, 255)
-      bgr = tuple(cv2.cvtColor(np.uint8([[hsv]]), cv2.COLOR_HSV2BGR)[0,0].tolist())
-      for x,y in person.values():
-        cv2.circle(vis_image, (int(x),int(y)), 5, bgr)
-    cv2.imshow('OpenPose', vis_image)
-    cv2.waitKey(1)
-
 def callback(data):
-  if not people_pub.get_num_connections() and not debug_mode:
+  if not people_pub.get_num_connections():
     return
   try:
-    cv_image = bridge.imgmsg_to_cv2(data, 'bgr8')
+    cv_image = bridge.imgmsg_to_cv2(data, 'rgb8')
   except CvBridgeError as e:
     rospy.logerr(e)
     return
@@ -155,12 +149,10 @@ def callback(data):
                                    for k,(x,y) in p.items()]) \
                 for p in persons]
   people_pub.publish(msg)
-  if show_prev:
-    pose_detector.visualize(cv_image, persons)
 
 def detect_people(req):
   try:
-    cv_image = bridge.imgmsg_to_cv2(req.image, 'bgr8')
+    cv_image = bridge.imgmsg_to_cv2(req.image, 'rgb8')
   except CvBridgeError as e:
     rospy.logerr(e)
     return None
@@ -171,19 +163,23 @@ def detect_people(req):
                 for p in persons]
   return msg
 
-def detect_hand(req):
+def detect_keypoints(req, detector):
   try:
-    cv_image = bridge.imgmsg_to_cv2(req.image, 'bgr8')
+    cv_image = bridge.imgmsg_to_cv2(req.image, 'rgb8')
   except CvBridgeError as e:
     rospy.logerr(e)
     return None
-  key_points = hand_detector.detect_keypoints(cv_image, **pose_params)[0]
+  key_points = detector.detect_keypoints(cv_image, **pose_params)[0]
   msg = DetectKeyPointsResponse()
   msg.key_points = [KeyPoint(name=k, x=x, y=y) \
                     for k,(x,y) in key_points.items()]
-  if show_prev:
-    pose_detector.visualize(cv_image, [key_points])
   return msg
+
+def detect_hand(req):
+  return detect_keypoints(req, hand_detector)
+
+def detect_face(req):
+  return detect_keypoints(req, face_detector)
 
 def reconf_callback(config, level):
   for key in ['key_point_threshold', 'affinity_threshold', 'line_division']:
@@ -191,15 +187,23 @@ def reconf_callback(config, level):
   return config
 
 def enable_people_detector(req):
-  pose_detector.initialize()
+  pose_detector.initialize(stage=stage)
+  return EmptyResponse()
+
+def enable_face_detector(req):
+  face_detector.initialize(stage=stage)
   return EmptyResponse()
 
 def enable_hand_detector(req):
-  hand_detector.initialize()
+  hand_detector.initialize(stage=stage)
   return EmptyResponse()
 
 def disable_people_detector(req):
   pose_detector.finalize()
+  return EmptyResponse()
+
+def disable_face_detector(req):
+  face_detector.finalize()
   return EmptyResponse()
 
 def disable_hand_detector(req):
@@ -208,37 +212,42 @@ def disable_hand_detector(req):
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument('--auto_detection_start', type=bool, default=True, help='start detectino automatically.')
+  parser.add_argument('--enable-people', type=bool, default=True)
+  parser.add_argument('--enable-hand', type=bool, default=True)
+  parser.add_argument('--enable-face', type=bool, default=True)
   args, _ = parser.parse_known_args()
 
   pkg = rospkg.rospack.RosPack().get_path('openpose_ros')
   bridge = CvBridge()
   rospy.init_node('openpose')
-  show_prev = rospy.get_param('~show_prev', False)
-  debug_mode = rospy.get_param('~debug_mode', False)
-  rospy.loginfo('show_prev: {}, debug_mode: {}'.format(show_prev, debug_mode))
+  stage = rospy.get_param('~stage', 6)
 
   ckpt_file = os.path.join(pkg, 'data', 'pose_coco.ckpt')
-  pose_detector = KeyPointDetector(pose_net_coco, ckpt_file, POSE_COCO_L2, POSE_COCO_L1, input_shape=(256, 256), auto_detection_start=args.auto_detection_start)
+  pose_detector = KeyPointDetector(pose_net_coco, ckpt_file, POSE_COCO_L2, POSE_COCO_L1, input_shape=(480, 640))
+  if args.enable_people:
+    pose_detector.initialize(stage=stage)
   pose_params = {}
 
-  #ckpt_file = os.path.join(pkg, 'data', 'face.ckpt')
-  #face_detector = KeyPointDetector(face_net, ckpt_file, FACE)
+  ckpt_file = os.path.join(pkg, 'data', 'face.ckpt')
+  face_detector = KeyPointDetector(face_net, ckpt_file, FACE, input_shape=(480,640))
+  if args.enable_face:
+    face_detector.initialize(stage=stage)
 
   ckpt_file = os.path.join(pkg, 'data', 'hand.ckpt')
-  hand_detector = KeyPointDetector(hand_net, ckpt_file, HAND, input_shape=(256,256), auto_detection_start=args.auto_detection_start)
+  hand_detector = KeyPointDetector(hand_net, ckpt_file, HAND, input_shape=(480,640))
+  if args.enable_hand:
+    hand_detector.initialize(stage=stage)
 
   image_sub = rospy.Subscriber('image', Image, callback)
   people_pub = rospy.Publisher('people', PersonArray, queue_size=1)
   rospy.Service('detect_people', DetectPeople, detect_people)
   rospy.Service('detect_hand', DetectKeyPoints, detect_hand)
-  #rospy.Service('detect_face', DetectKeyPoints, detect_face)
+  rospy.Service('detect_face', DetectKeyPoints, detect_face)
   rospy.Service('enable_people_detector', Empty, enable_people_detector)
   rospy.Service('enable_hand_detector', Empty, enable_hand_detector)
   rospy.Service('disable_people_detector', Empty, disable_people_detector)
   rospy.Service('disable_hand_detector', Empty, disable_hand_detector)
 
   srv = Server(KeyPointDetectorConfig, reconf_callback)
-  #print('openpose start completed!')
   rospy.spin()
 
