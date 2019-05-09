@@ -28,6 +28,7 @@ def pose_net(x, num_parts=19, num_limbs=19, num_stages=6):
       net = slim.conv2d(net, 512, [3,3], scope='conv4_2')
       net = slim.conv2d(net, 256, [3,3], scope='conv4_3_CPM')
       net = slim.conv2d(net, 128, [3,3], scope='conv4_4_CPM')
+      end_points['stage0'] = net
 
       limb = slim.conv2d(net, 128, [3,3], scope='conv5_1_CPM_L1')
       limb = slim.conv2d(limb, 128, [3,3], scope='conv5_2_CPM_L1')

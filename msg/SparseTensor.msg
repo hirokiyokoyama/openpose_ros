@@ -1,0 +1,9 @@
+uint8 width
+uint8 height
+uint8 channels
+float32 min_value
+float32 max_value
+uint8[] x_indices
+uint8[] y_indices
+uint8[] channel_indices
+uint8[] quantized_values

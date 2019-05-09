@@ -54,6 +54,7 @@ add_message_files(
   KeyPoint.msg
   Person.msg
   PersonArray.msg
+  SparseTensor.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -61,6 +62,7 @@ add_service_files(
   FILES
   DetectPeople.srv
   DetectKeyPoints.srv
+  Compute.srv
 )
 
 ## Generate actions in the 'action' folder
