@@ -237,11 +237,10 @@ def compute(req):
                             threshold = pose_params['affinity_threshold'])
     persons = [{pose_detector.part_names[k]:inlier_lists[v] \
                 for k,v in person.items()} for person in persons]
-    msg = PersonArray()
-    msg.people = [Person(body_parts=[KeyPoint(name=k, x=x, y=y) \
-                                     for k,(x,y) in p.items()]) \
-                  for p in persons]
-    return ComputeResponse(people=msg)
+    people = [Person(body_parts=[KeyPoint(name=k, x=x, y=y) \
+                                 for k,(x,y) in p.items()]) \
+              for p in persons]
+    return ComputeResponse(people=people)
   else:
     if not req.output.startswith('stage'):
       raise ValueError('Argument "output" must be "people" or starts with "stage".')
