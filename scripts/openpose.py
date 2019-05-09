@@ -171,22 +171,26 @@ def encode_sparse_tensor(tensor, threshold=0.1, signed=True):
     inds = np.where(np.abs(tensor) > threshold)
   else:
     inds = np.where(tensor > threshold)
-  msg.x_indices = inds[1]
-  msg.y_indices = inds[0]
-  msg.channel_indices = inds[2]
+  msg.x_indices = inds[1].tolist()
+  msg.y_indices = inds[0].tolist()
+  msg.channel_indices = inds[2].tolist()
   val = tensor[inds]
   min_val = val.min()
   max_val = val.max()
   msg.min_value = min_val
   msg.max_value = max_val
-  msg.quantized_values = np.uint8((val-min_val)/(max_val-min_val) * 255)
+  msg.quantized_values = np.uint8((val-min_val)/(max_val-min_val) * 255).tolist()
   return msg
 
 def decode_sparse_tensor(msg):
   tensor = np.zeros(
     shape=[msg.height, msg.width, msg.channels],
     dtype=np.float32)
-  val = msg.quantized_values/255. * (msg.max_value - msg.min_value) + msg.min_value
+  if isinstance(msg.quantized_value, str):
+    val = np.fromstring(msg.quantized_value, dtype=np.uint8)
+  else:
+    val = np.uint8(val)
+  val = np.float32(val)/255. * (msg.max_value - msg.min_value) + msg.min_value
   tensor[(msg.y_indices, msg.x_indices, msg.channel_indices)] = val
   return tensor
 
