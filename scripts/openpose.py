@@ -186,12 +186,11 @@ def decode_sparse_tensor(msg):
   tensor = np.zeros(
     shape=[msg.height, msg.width, msg.channels],
     dtype=np.float32)
-  if isinstance(msg.quantized_value, str):
-    val = np.fromstring(msg.quantized_value, dtype=np.uint8)
-  else:
-    val = np.uint8(val)
+  val = np.fromstring(msg.quantized_values, dtype=np.uint8)
   val = np.float32(val)/255. * (msg.max_value - msg.min_value) + msg.min_value
-  tensor[(msg.y_indices, msg.x_indices, msg.channel_indices)] = val
+  tensor[(np.fromstring(msg.y_indices, dtype=np.uint8),
+          np.fromstring(msg.x_indices, dtype=np.uint8),
+          np.fromstring(msg.channel_indices, dtype=np.uint8))] = val
   return tensor
 
 def compute(req):
