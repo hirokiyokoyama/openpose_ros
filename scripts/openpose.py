@@ -204,32 +204,13 @@ def compute(req):
   fetch_list = req.queries
   ep = pose_detector.end_points
   feed_dict = {
-    ep[x.name] if x.name in ep else x.name: decode_sparse_tensor(x) \
+    ep[x.name] if x.name in ep else x.name: [decode_sparse_tensor(x)] \
     for x in req.input_tensors }
-  #feed_dict[pose_detector.ph_threshold] = pose_params['key_point_threshold']
-  
   outputs = pose_detector.sess.run(fetch_list, feed_dict)
-  # TODO: Scale is not always 8. It varies according to the preprocessing.
-  #scale_x = 8.
-  #scale_y = 8.
-  #inlier_lists = []
-  #for _,y,x,c in keypoints:
-  #  x = x*scale_x + scale_x/2
-  #  y = y*scale_y + scale_y/2
-  #  inlier_lists.append((x,y))
-      
-  #persons = connect_parts(affinity[0], keypoints[:,1:], pose_detector.limbs,
-  #                        line_division = pose_params['line_division'],
-  #                        threshold = pose_params['affinity_threshold'])
-  #persons = [{pose_detector.part_names[k]:inlier_lists[v] \
-  #            for k,v in person.items()} for person in persons]
-  #people = [Person(body_parts=[KeyPoint(name=k, x=x, y=y) \
-  #                             for k,(x,y) in p.items()]) \
-  #          for p in persons]
   thresholds = req.thresholds
   if not thresholds:
     thresholds = [0.1] * len(req.queries)
-  output_tensors = [ encode_sparse_tensor(o, threshold=t) \
+  output_tensors = [ encode_sparse_tensor(o[0], threshold=t) \
                      for o, t in zip(outputs, thresholds) ]
   return ComputeResponse(output_tensors=output_tensors)
 
