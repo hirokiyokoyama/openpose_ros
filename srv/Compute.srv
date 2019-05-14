@@ -1,11 +1,5 @@
-string input
-string output
-sensor_msgs/Image image
-openpose_ros/SparseTensor feature_map
-openpose_ros/SparseTensor affinity_field
-openpose_ros/SparseTensor confidence_map
+openpose_ros/SparseTensor[] input_tensors
+string[] queries
+float32[] thresholds
 ---
-openpose_ros/Person[] people
-openpose_ros/SparseTensor feature_map
-openpose_ros/SparseTensor affinity_field
-openpose_ros/SparseTensor confidence_map
+openpose_ros/SparseTensor[] output_tensors

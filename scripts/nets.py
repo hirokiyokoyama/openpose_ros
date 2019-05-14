@@ -230,9 +230,24 @@ def convert_npy_to_ckpt(net_fn, npy_path, ckpt_path):
       tf.train.Saver(sharded=False).save(sess, ckpt_path, write_meta_graph=False)
 
 def non_maximum_suppression(heat_map, threshold=0.5):
-  heat_map_max = slim.max_pool2d(heat_map, stride=1, kernel_size=[3,3], padding='SAME')
+  if isinstance(heat_map, np.ndarray):
+    global _max_pool_sess
+    if '_max_pool_sess' is not in globals():
+      with tf.Graph().as_default() as graph:
+        ph = tf.placeholder(tf.float32, shape=[None]*4, name='x')
+        y = non_maximum_suppression(ph, threshold=threshold)
+        y = tf.identity(y, name='y')
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+      _max_pool_sess = tf.Session(graph=graph, config=config)
+    return _max_pool_sess.run('y:0', {'x:0': heat_map})
+  
+  heat_map_max = slim.max_pool2d(
+    heat_map, stride=1, kernel_size=[3,3], padding='SAME')
   # (num, 4(NHWC))
-  inds = tf.where(tf.logical_and(heat_map > threshold, tf.equal(heat_map_max, heat_map)))
+  inds = tf.where(
+    tf.logical_and(heat_map > threshold,
+                   tf.equal(heat_map_max, heat_map)))
   #return tf.concat(values=[inds[:,0:1], inds[:, 1:3] * 8, inds[:,3:]], axis=1)
   return inds
 
