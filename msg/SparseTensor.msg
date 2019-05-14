@@ -1,7 +1,7 @@
 string name
-uint8 width
-uint8 height
-uint8 channels
+uint16 width
+uint16 height
+uint16 channels
 float32 min_value
 float32 max_value
 uint8[] x_indices
