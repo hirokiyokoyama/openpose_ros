@@ -234,13 +234,14 @@ def non_maximum_suppression(heat_map, threshold=0.5):
     global _max_pool_sess
     if '_max_pool_sess' not in globals():
       with tf.Graph().as_default() as graph:
-        ph = tf.placeholder(tf.float32, shape=[None]*4, name='x')
-        y = non_maximum_suppression(ph, threshold=threshold)
+        ph_x = tf.placeholder(tf.float32, shape=[None]*4, name='x')
+        ph_t = tf.placeholder(tf.float32, shape=[], name='t')
+        y = non_maximum_suppression(ph_x, threshold=ph_t)
         y = tf.identity(y, name='y')
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
       _max_pool_sess = tf.Session(graph=graph, config=config)
-    return _max_pool_sess.run('y:0', {'x:0': heat_map})
+    return _max_pool_sess.run('y:0', {'x:0': heat_map, 't:0': threshold})
   
   heat_map_max = slim.max_pool2d(
     heat_map, stride=1, kernel_size=[3,3], padding='SAME')

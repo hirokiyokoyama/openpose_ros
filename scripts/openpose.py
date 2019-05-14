@@ -201,8 +201,8 @@ def decode_sparse_tensor(msg):
   return tensor
 
 def compute(req):
-  fetch_list = req.queries
   ep = pose_detector.end_points
+  fetch_list = [ep[x] if x in ep else x for x in req.queries]
   feed_dict = {
     ep[x.name] if x.name in ep else x.name: [decode_sparse_tensor(x)] \
     for x in req.input_tensors }
@@ -210,8 +210,11 @@ def compute(req):
   thresholds = req.thresholds
   if not thresholds:
     thresholds = [0.1] * len(req.queries)
-  output_tensors = [ encode_sparse_tensor(o[0], threshold=t) \
-                     for o, t in zip(outputs, thresholds) ]
+  output_tensors = []
+  for o, t, q in zip(outputs, thresholds, req.queries):
+    st = encode_sparse_tensor(o[0], threshold=t)
+    st.name = q
+    output_tensors.append(st)
   return ComputeResponse(output_tensors=output_tensors)
 
 def reconf_callback(config, level):
