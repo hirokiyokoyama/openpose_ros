@@ -55,6 +55,7 @@ add_message_files(
   Person.msg
   PersonArray.msg
   SparseTensor.msg
+  SparseTensorArray.msg
 )
 
 ## Generate services in the 'srv' folder
