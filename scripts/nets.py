@@ -232,7 +232,7 @@ def convert_npy_to_ckpt(net_fn, npy_path, ckpt_path):
 def non_maximum_suppression(heat_map, threshold=0.5):
   if isinstance(heat_map, np.ndarray):
     global _max_pool_sess
-    if '_max_pool_sess' is not in globals():
+    if '_max_pool_sess' not in globals():
       with tf.Graph().as_default() as graph:
         ph = tf.placeholder(tf.float32, shape=[None]*4, name='x')
         y = non_maximum_suppression(ph, threshold=threshold)
