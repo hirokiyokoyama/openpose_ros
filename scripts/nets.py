@@ -76,16 +76,21 @@ def pose_net_coco(x):
 def pose_net_mpi(x):
   return pose_net(x, num_parts=16, num_limbs=14, num_stages=6)
 
-def pose_net_body_25(x, num_parts=26, num_limbs=26):
+def pose_net_body_25(x, num_parts=26, num_limbs=26, weights_decay=0.01):
   def prelu(x):
     with tf.variable_scope(''):
       return tf.keras.layers.PReLU(shared_axes=[1,2])(x)
     
   end_points = {}
 
+  weights_regularizer = None
+  if weights_decay is not None:
+    weights_regularizer = tf.contrib.slim.l2_regularizer(weights_decay)
+    
   with slim.arg_scope([slim.max_pool2d], stride=2, kernel_size=[2,2]):
     with slim.arg_scope([slim.conv2d], stride=1, padding='SAME',
-              activation_fn=tf.nn.relu, normalizer_fn=None):
+                        activation_fn=tf.nn.relu, normalizer_fn=None,
+                        weights_regularizer=weights_regularizer):
       net = slim.conv2d(x, 64, [3,3], scope='conv1_1')
       net = slim.conv2d(net, 64, [3,3], scope='conv1_2')
       net = slim.max_pool2d(net, scope='pool1_stage1')
@@ -100,7 +105,8 @@ def pose_net_body_25(x, num_parts=26, num_limbs=26):
       net = slim.conv2d(net, 512, [3,3], scope='conv4_1')
       
   with slim.arg_scope([slim.conv2d], stride=1, padding='SAME',
-                      activation_fn=prelu, normalizer_fn=None):
+                      activation_fn=prelu, normalizer_fn=None,
+                      weights_regularizer=weights_regularizer):
     net = slim.conv2d(net, 512, [3,3], scope='conv4_2')
     net = slim.conv2d(net, 256, [3,3], scope='conv4_3_CPM')
     net = slim.conv2d(net, 128, [3,3], scope='conv4_4_CPM')
