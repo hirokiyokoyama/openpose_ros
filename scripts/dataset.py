@@ -2,6 +2,7 @@ import cv2
 import json
 import os
 import numpy as np
+import sys
 
 def generate_cm(img_shape, keypoints, sigma=8., target_shape=None):
   if target_shape is None:
@@ -105,21 +106,37 @@ def load_coco_dataset(body_annotation_file, foot_annotation_file=None,
   foot_inds = [19,20,21,22,23,24]
   limbs = [(keypoint_names.index(s), keypoint_names.index(t)) for s,t in limb_names]
 
+  img2bodies = {}
+  K = len(body_ann['annotations'])
+  for k, body in enumerate(body_ann['annotations']):
+    sys.stdout.write('\rIndexing body {}/{}.'.format(k+1, K))
+    sys.stdout.flush()
+    img_id = body['image_id']
+    bodies = img2bodies.setdefault(img_id, [])
+    bodies.append(body)
+  sys.stdout.write('\n')
+  img2feet = {}
+  if foot_ann is not None:
+    K = len(foot_ann['annotations'])
+    for k, foot in enumerate(foot_ann['annotations']):
+      sys.stdout.write('\rIndexing foot {}/{}.'.format(k+1, K))
+      sys.stdout.flush()
+      img_id = foot['image_id']
+      feet = img2feet.setdefault(img_id, [])
+      feet.append(foot)
+    sys.stdout.write('\n')
+
   images = []     # [num_images]
   keypoints = []  # [num_images, num_persons, num_keypoints, 2(x,y)]
   affinities = [] # [num_images, num_persons, num_limbs, 4(x1,y1,x2,y2)]
   K = len(body_ann['images'])
-  import sys
   for k, img in enumerate(body_ann['images']):
-    sys.stdout.write('\r{}/{}'.format(k+1, K))
+    sys.stdout.write('\rProcessing image {}/{}.'.format(k+1, K))
     sys.stdout.flush()
-    of_image = lambda x: x['image_id'] == img['id']
-    bodies = filter(of_image, body_ann['annotations'])
+    bodies = img2bodies.get(img['id'], [])
     bodies = {b['id']: b['keypoints'] for b in bodies}
-    feet = {}
-    if foot_ann is not None:
-      feet = filter(of_image, foot_ann['annotations'])
-      feet = {f['id']: f['keypoints'] for f in feet}
+    feet = img2feet.get(img['id'], [])
+    feet = {f['id']: f['keypoints'] for f in feet}
     persons = set(bodies.keys()).union(feet.keys())
     n_persons = len(persons)
     if ignore_no_person and n_persons == 0:
@@ -157,4 +174,5 @@ def load_coco_dataset(body_annotation_file, foot_annotation_file=None,
     images.append(img['file_name'])
     keypoints.append(kp)
     affinities.append(af)
+  sys.stdout.write('\n')
   return images, keypoints, affinities

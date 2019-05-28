@@ -7,10 +7,10 @@ from nets import pose_net_body_25
 from labels import POSE_BODY_25_L2, POSE_BODY_25_L1
 
 if __name__=='__main__':
-  FOOT_FILE = '/media/psf/Home/Documents/coco/annotations/person_keypoints_val2017_foot_v1.json'
-  BODY_FILE = '/media/psf/Home/Documents/coco/annotations/person_keypoints_val2017.json'
-  IMAGE_DIR = '/media/psf/Home/Documents/coco/images/val2017'
-  CKPT_FILE = '/home/yokoyama/Documents/openpose_data/pose_iter_584000.ckpt'
+  FOOT_FILE = '/home/yokoyama/Documents/coco/annotations/person_keypoints_val2017_foot_v1.json'
+  BODY_FILE = '/home/yokoyama/Documents/coco/annotations/person_keypoints_val2017.json'
+  IMAGE_DIR = '/home/yokoyama/Documents/coco/images/val2017'
+  CKPT_FILE = '/home/yokoyama/Documents/pose_iter_584000.ckpt'
   images, keypoints, affinities = load_coco_dataset(
     BODY_FILE, FOOT_FILE,
     keypoint_names=POSE_BODY_25_L2,
