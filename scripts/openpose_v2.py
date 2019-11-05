@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+import cv2
+import numpy as np
 import tensorflow as tf
 tf.enable_eager_execution()
 
-import numpy as np
 import rospy
 import threading
 import rospkg
