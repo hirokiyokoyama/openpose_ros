@@ -58,7 +58,7 @@ def callback(image_msg):
     except CvBridgeError as e:
         rospy.logerr(e)
 
-    people_msg = detect_people(cv_image)
+    people_msg = detect_people(image_msg)
     cv_image = cv_image.copy()
     draw_peoplemsg(cv_image, people_msg)
     

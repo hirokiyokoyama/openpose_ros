@@ -7,7 +7,7 @@ layers = tf.keras.layers
 
 class OpenPoseCPM(tf.keras.Model):
   def __init__(self, dtype=tf.float32):
-    super(OpenPoseCPM, self).__init__(dtype=dtype)
+    super(OpenPoseCPM, self).__init__()
     self._layers = [
         layers.Conv2D(64, [3,3], 1, padding='SAME', dtype=dtype),
         layers.ReLU(dtype=dtype),
@@ -45,7 +45,7 @@ class OpenPoseCPM(tf.keras.Model):
 
 class OpenPoseStage(tf.keras.Model):
   def __init__(self, c, c1=96, c2=256, dtype=tf.float32):
-    super(OpenPoseStage, self).__init__(dtype=dtype)
+    super(OpenPoseStage, self).__init__()
 
     self._blocks = []
     for i in range(5):
@@ -76,7 +76,7 @@ class OpenPoseStage(tf.keras.Model):
   
 class OpenPose(tf.keras.Model):
   def __init__(self, num_parts=26, num_limbs=26, part_stages=1, limb_stages=3, dtype=tf.float32):
-    super(OpenPose, self).__init__(dtype=dtype)
+    super(OpenPose, self).__init__()
 
     self._cpm = OpenPoseCPM(dtype=dtype)
     
@@ -107,10 +107,14 @@ class OpenPose(tf.keras.Model):
 def pose_net_body_25(dtype=tf.float32):
   return OpenPose(num_parts=26, num_limbs=26, dtype=dtype)
 
-@tf.function
+from functools import partial
+@partial(tf.contrib.eager.defun, autograph=False)
+#@tf.function
 def non_maximum_suppression(heat_map, threshold=tf.constant(0.5)):
-  heat_map_max = tf.nn.max_pool2d(
-    heat_map, ksize=[3,3], strides=1, padding='SAME')
+  heat_map_max = tf.nn.max_pool(
+    heat_map, ksize=[1,3,3,1], strides=[1,1,1,1], padding='SAME')
+  heat_map = tf.cast(heat_map, tf.float32)
+  heat_map_max = tf.cast(heat_map_max, tf.float32)
   # (num, 4(NHWC))
   inds = tf.where(
     tf.logical_and(heat_map > threshold,
